@@ -1,65 +1,313 @@
 {
-  "name": "vsdiff",
-  "displayName": "vsdiff",
-  "description": "Applies the clipboard contents as a diff.",
-  "version": "0.0.1",
-  "publisher": "Kyle Jessup",
-  "engines": {
-    "vscode": "^1.77.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "extension.applyDiff",
-        "title": "Apply Diff from Clipboard"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "extension.applyDiff",
-        "key": "ctrl+cmd+d",
-        "mac": "ctrl+cmd+d",
-        "when": "editorTextFocus"
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/diff": "^5.0.3",
-    "@types/diff-match-patch": "^1.0.32",
-    "@types/difflib": "^0.2.1",
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.77.0",
-    "@typescript-eslint/eslint-plugin": "^5.56.0",
-    "@typescript-eslint/parser": "^5.56.0",
-    "@vscode/test-electron": "^2.3.0",
-    "eslint": "^8.36.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "ts-loader": "^9.4.2",
-    "typescript": "^4.9.5",
-    "webpack": "^5.76.3",
-    "webpack-cli": "^5.0.1"
-  },
-  "dependencies": {
-    "diff": "^5.0.0",
-    "difflib": "^0.2.4"
-  }
+	"name": "aiide",
+	"displayName": "AIIDE",
+	"publisher": "Kyle Jessup",
+	"description": "Use the Official OpenAI API inside VSCode",
+	"license": "MIT",
+	"icon": "logo_aiide.jpg",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.72.0"
+	},
+	"categories": [
+		"Data Science",
+		"Machine Learning",
+		"Programming Languages",
+		"Testing",
+		"Linters",
+		"Formatters",
+		"Education"
+	],
+	"keywords": [
+		"chatgpt",
+		"copilot",
+		"openai",
+		"ai",
+		"codex",
+		"gpt3",
+		"unit testing",
+		"cohere",
+		"aiide"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"main": "./src/extension.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "aiide-sidebar-view",
+					"title": "AIIDE Chat",
+					"icon": "media/code_gpt_bar.svg"
+				}
+			]
+		},
+		"views": {
+			"aiide-sidebar-view": [
+				{
+					"type": "webview",
+					"id": "aiide-sidebar",
+					"name": "AIIDE Chat",
+					"icon": "media/code_gpt_bar.svg",
+					"contextualTitle": "AIIDE Chat"
+				}
+			]
+		},
+		"configuration": {
+			"title": "AIIDE",
+			"properties": {
+				"AIIDE.apiKey": {
+					"type": "string",
+					"default": "OpenAI",
+					"markdownDescription": "To enter your [API Key](https://beta.openai.com/account/api-keys) press cmd+shift+p and search for 'AIIDE: Set API KEY'. Select your AI provider:",
+					"enum": [
+						"OpenAI",
+						"Cohere",
+						"AI21",
+						"Anthropic"
+					]
+				},
+				"AIIDE.model": {
+					"type": "string",
+					"default": "gpt-3.5-turbo",
+					"markdownDescription": "The [model](https://www.aiide.co/docs/tutorial-basics/configuration#model) to use",
+					"enum": [
+						"gpt-4",
+						"gpt-4-32k",
+						"gpt-3.5-turbo",
+						"text-davinci-003",
+						"text-curie-001",
+						"text-babbage-001",
+						"text-ada-001",
+						"command-xlarge-nightly",
+						"command-medium-nightly",
+						"j2-jumbo-instruct",
+						"j2-grande-instruct",
+						"claude-v1",
+						"claude-v1.2",
+						"claude-instant-v1"
+					],
+					"enumDescriptions": [
+						"gpt-4: Multimodal - OpenAI (Recommended)",
+						"gpt-4-32k: Multimodal - OpenAI",
+						"gpt-3.5-turbo: ChatGPT - OpenAI",
+						"text-davinci-003: GPT-3 - OpenAI",
+						"text-curie-001: GPT-3 - OpenAI",
+						"text-babbage-001: GPT-3 - OpenAI",
+						"text-ada-001: GPT-3 - OpenAI",
+						"command-xlarge-nightly - Cohere",
+						"command-medium-nightly - Cohere",
+						"j2-jumbo-instruct - AI21",
+						"j2-grande-instruct - AI21",
+						"claude-v1 - Anthropic",
+						"claude-v1.2 - Anthropic",
+						"claude-instant-v1 - Anthropic"
+					]
+				},
+				"AIIDE.maxTokens": {
+					"type": "number",
+					"default": 800,
+					"minimum": 1,
+					"markdownDescription": "The maximum number of [tokens](https://www.aiide.co/docs/tutorial-basics/configuration#max-token) for each request"
+				},
+				"AIIDE.temperature": {
+					"type": "number",
+					"default": 0.3,
+					"minimum": 0,
+					"maximum": 1,
+					"markdownDescription": "The [temperature](https://www.aiide.co/docs/tutorial-basics/configuration#temperature). Must be between 0 and 1"
+				},
+				"AIIDE.query.language": {
+					"type": "string",
+					"default": "English",
+					"markdownDescription": "Select the query language",
+					"enum": [
+						"Arabic",
+						"Chinese",
+						"English",
+						"French",
+						"German",
+						"Hebrew",
+						"Italian",
+						"Japanese",
+						"Korean",
+						"Polish",
+						"Portuguese",
+						"Russian",
+						"Spanish",
+						"Thai",
+						"Turkish",
+						"Ukrainian"
+					]
+				}
+			}
+		},
+		"commands": [
+			{
+				"command": "aiide.askAIIDE",
+				"title": "Ask AIIDE"
+			},
+			{
+				"command": "aiide.askStackOverflow",
+				"title": "Ask StackOverflow AIIDE"
+			},
+			{
+				"command": "aiide.searchApisAIIDE",
+				"title": "Search APIs AIIDE"
+			},
+			{
+				"command": "aiide.compileAndRunAIIDE",
+				"title": "Compile & Run AIIDE"
+			},
+			{
+				"command": "aiide.explainAIIDE",
+				"title": "Explain AIIDE"
+			},
+			{
+				"command": "aiide.refactorAIIDE",
+				"title": "Refactor AIIDE"
+			},
+			{
+				"command": "aiide.documentAIIDE",
+				"title": "Document AIIDE"
+			},
+			{
+				"command": "aiide.findProblemsAIIDE",
+				"title": "Find Problems AIIDE"
+			},
+			{
+				"command": "aiide.unitTestAIIDE",
+				"title": "Unit Test AIIDE"
+			},
+			{
+				"command": "aiide.getCode",
+				"title": "Get Code from comments"
+			},
+			{
+				"command": "aiide.setApiKeyAIIDE",
+				"title": "AIIDE: Set API KEY"
+			},
+			{
+				"command": "aiide.removeApiKeyAIIDE",
+				"title": "AIIDE: Remove API KEY"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "aiide.getCode",
+				"key": "ctrl+shift+i",
+				"mac": "cmd+shift+i"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "aiide.askAIIDE",
+					"when": "editorTextFocus",
+					"group": "aiide-menu-group@1"
+				},
+				{
+					"command": "aiide.compileAndRunAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@2"
+				},
+				{
+					"command": "aiide.explainAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@3"
+				},
+				{
+					"command": "aiide.refactorAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@4"
+				},
+				{
+					"command": "aiide.documentAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@5"
+				},
+				{
+					"command": "aiide.findProblemsAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@6"
+				},
+				{
+					"command": "aiide.unitTestAIIDE",
+					"when": "editorHasSelection",
+					"group": "aiide-menu-group@7"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "aiide.askAIIDE"
+				},
+				{
+					"command": "aiide.compileAndRunAIIDE",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "aiide.explainAIIDE",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "aiide.refactorAIIDE",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "aiide.documentAIIDE",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "aiide.findProblemsAIIDE",
+					"when": "editorHasSelection"
+				},
+				{
+					"command": "aiide.unitTestAIIDE",
+					"when": "editorHasSelection"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"lint": "eslint . --fix",
+		"pretest": "npm run lint",
+		"test": "node ./test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^8.0.0",
+		"@types/mocha": "^10.0.1",
+		"@types/node": "16.x",
+		"@types/vscode": "^1.72.0",
+		"@vscode/test-electron": "^2.2.0",
+		"eslint": "^8.35.0",
+		"eslint-config-standard": "^17.0.0",
+		"eslint-plugin-import": "^2.27.5",
+		"eslint-plugin-n": "^15.6.1",
+		"eslint-plugin-promise": "^6.1.1",
+		"glob": "^8.0.3",
+		"mocha": "^10.1.0",
+		"typescript": "^4.9.3"
+	},
+	"dependencies": {
+		"axios": "^0.26.1",
+		"cheerio": "^1.0.0-rc.12",
+		"cohere-ai": "^5.0.2",
+		"openai": "^3.2.1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/davila7/code-gpt-docs"
+	},
+	"__metadata": {
+		"id": "eb8db386-b7d8-4961-8048-b188d778a1e9",
+		"publisherId": "32ffcc9f-7414-49c5-8252-14fb6374a4f1",
+		"publisherDisplayName": "Code GPT",
+		"targetPlatform": "undefined",
+		"isApplicationScoped": false,
+		"updated": true,
+		"isPreReleaseVersion": false,
+		"installedTimestamp": 1681004328891,
+		"preRelease": false
+	}
 }
