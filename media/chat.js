@@ -40,9 +40,7 @@
   const textAreaInput = document.querySelector('#prompt')
 
   const btnSettings = document.querySelector('#btn-settings')
-  // .initialTemplate li > button
-  const templateBtnSuggestions = document.querySelectorAll('.initialTemplate li > button')
-
+  
   const stopBtn = document.querySelector('#stopResponse')
 
   if (textAreaInput) {
@@ -92,19 +90,7 @@
   }
 
   function addCommandButtons () {
-    let commandButtonElements = chatContainer.querySelectorAll('.command')
-    commandButtonElements.forEach((commandButtonElement) => {
-      commandButtonElement.addEventListener('click', (e) => {
-        e.preventDefault()
-        const code = JSON.parse(atob(commandButtonElement.querySelector('input').value))
-        vscode.postMessage({
-          type: 'runCommand',
-          command: code
-        })
-      })
-    })
-
-    commandButtonElements = chatContainer.querySelectorAll('.script')
+    let commandButtonElements = chatContainer.querySelectorAll('.script')
     commandButtonElements.forEach((commandButtonElement) => {
       commandButtonElement.addEventListener('click', (e) => {
         e.preventDefault()
@@ -136,7 +122,7 @@
           value += '\n' + data.command.args.text      
       }
       for (var i in data) {
-        if (i == 'thoughts' || i == 'command' || i == 'script') {
+        if (i == 'thoughts' || i == 'script') {
           continue
         }
         value += '\n```json\n' + JSON.stringify(data[i]).replace('\\n', '\n') + '\n```\n\n'
@@ -191,21 +177,6 @@
   clearButton.addEventListener('click', clearChat)
 
   btnSettings?.addEventListener('click', openSettings)
-
-  templateBtnSuggestions?.forEach((templateBtnSuggestion) => {
-    templateBtnSuggestion.addEventListener('click', async (e) => {
-      e.preventDefault()
-      const template = e.target.innerText
-      const splittedTemplate = template.split('')
-      textAreaInput.focus()
-      for (const char of splittedTemplate) {
-        textAreaInput.value += char
-        await sleep(50)
-      }
-      await sleep(1000)
-      await handleSubmit(e)
-    })
-  })
 
   stopBtn?.addEventListener('click', stopStream)
 

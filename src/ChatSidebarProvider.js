@@ -73,6 +73,10 @@ class ChatSidebarProvider {
     return `id-${timestamp}-${hexadecimalString}`
   }
 
+  async sendPromptText(text, apiKey, isGenerated = false) {
+    return await this.sendPrompt({text:text, uniqueId: this.generateUniqueId()}, apiKey, isGenerated)
+  }
+
   async sendPrompt(data, apiKey, isGenerated = false) {
     const uniqueId = data.uniqueId
     const model = vscode.workspace.getConfiguration().get('AIIDE.model')
@@ -81,7 +85,7 @@ class ChatSidebarProvider {
 //    const language = vscode.workspace.getConfiguration().get('AIIDE.query.language')
 
     let message = data.text
-    let command
+    let responseData
     let response
     try {
       this._view.webview.postMessage({
@@ -115,17 +119,15 @@ class ChatSidebarProvider {
         temperature: temperature
       });
 
-      let data
       try {
         console.log(completion.data.choices[0].message.content)
-        data = JSON.parse(completion.data.choices[0].message.content)
+        responseData = JSON.parse(completion.data.choices[0].message.content)
       } catch (e) {
         console.log(`${completion.data.choices[0].message.content}`)
-        throw e
+        return await this.sendPromptText(`Use the proper response format.`, apiKey, true)
       }
-      response = data.thoughts.speak
-      command = data.command
-
+      response = responseData.thoughts.speak
+      
       this._history.push(
         {role:'user', 
           id: this.generateUniqueId(), 
@@ -150,12 +152,13 @@ class ChatSidebarProvider {
         history: this._history
       })
     }
-    await this.checkAutoExec(command, apiKey)
+    await this.checkAutoExec(responseData, apiKey)
   }
 
-  async checkAutoExec(command, apiKey) {
-    if (command && commandAutoExecList.includes(command.name)) {
-      await this.runCommand(command, apiKey)
+  async checkAutoExec(data, apiKey) {
+    let script = data.script
+    if (script && script.isreadonly) {
+      await this.executeScript(script, data.uniqueId, apiKey)
     }
   }
 
@@ -187,50 +190,27 @@ class ChatSidebarProvider {
     });
   }
 
-  async deleteProjectFile(relativePath) {
-    return new Promise((resolve, reject) => {
-      const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
-      const filePath = path.join(workspacePath, relativePath);
-      fs.unlink(filePath, (error) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(true);
-        }
-      });
-    });
-  }
-  
-  async applyDiffToFile(file, patch) {
-    try {
-      const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
-      const filePath = path.join(workspacePath, file);
-      let patchedText
-      if (patch.startsWith('---') || patch.startsWith('@@')) {
-        const fileData = await this.readFileData(file);
-        patchedText = applyPatch(fileData, patch);
-      } else {
-        patchedText = patch
-      }
-      if (patchedText === false) {
-        throw new Error("Could not apply the diff to the file. Some parts of the diff may be incorrect or conflicting.");
-      }
-      await this.createProjectFile(file, patchedText);
-      console.log("Diff applied successfully.");
-      return true
-    } catch (error) {
-      console.error("Error applying diff:", error);
-      return false
-    }
-  }
-
   // descriptions, type, text
-  async executeScript(scriptObj) {
+  async executeScript(scriptObj, uniqueId, apiKey) {
     return new Promise((resolve, reject) => {
       const workspacePath = vscode.workspace.workspaceFolders[0].uri.fsPath;
       let cmd = 'python3'
       let arg = '-c'
       switch(scriptObj.type) {
+        case 'front_file':
+          resolve(vscode.window.activeTextEditor?.document.uri.path)
+          return
+        case 'selected_text':
+          const editor = vscode.window.activeTextEditor
+          if (!editor) {
+            resolve('')
+            return
+          }
+          const { document } = editor
+          const cursorPosition = editor.selection.active
+          const selection = new vscode.Selection(cursorPosition.line, 0, cursorPosition.line, cursorPosition.character)
+          resolve(document.getText(selection))
+          return
         case 'python':
           cmd = 'python3'
           break
@@ -249,101 +229,13 @@ class ChatSidebarProvider {
           resolve(stdout);
         }
       });
-    });
-  }
-
-  async runCommand(command, apiKey) {
-    try {
-      switch (command.name) {
-        case 'tree': {
-          let treeTxt = buildDirectoryTree(vscode.workspace.workspaceFolders[0].uri.fsPath)
-          await this.sendPrompt({
-            text: treeTxt,
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'read_file': {
-          let file = command.args.file
-          await this.sendPrompt({
-            text: await this.readFileData(file),
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)                
-          break
-        }
-        case 'front_file': {
-          let ff = vscode.window.activeTextEditor?.document.uri
-          let p = ff?.path
-          await this.sendPrompt({
-            text: p ?? '',
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'create_file': {
-          let file = command.args.file
-          let content = command.args.content
-          await this.createProjectFile(file, content)
-          await this.sendPrompt({
-            text: 'true',
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'delete_file': {
-          let file = command.args.file
-          await this.sendPrompt({
-            text: await this.deleteProjectFile(file),
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'selected_text': {
-          const editor = vscode.window.activeTextEditor
-          const { document } = editor
-          const cursorPosition = editor.selection.active
-          const selection = new vscode.Selection(cursorPosition.line, 0, cursorPosition.line, cursorPosition.character)
-          const selectedText = document.getText(selection)
-          await this.sendPrompt({
-            text: await this.createProjectFile(file, ''),
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'patch_file': {
-          let file = command.args.file
-          let patch = command.args.patch
-          await this.sendPrompt({
-            text: await this.applyDiffToFile(file, patch) ? 'true' : 'false',
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-        case 'run_script': {
-          let script = command.args.script
-          let stdout = await this.executeScript(script)
-          await this.sendPrompt({
-            text: stdout,
-            uniqueId: this.generateUniqueId()
-          }, apiKey, true)
-          break
-        }
-      }
-    } catch (error) {
-      vscode.window.showErrorMessage('Error in runCommand: ' + error.message);
-    }
+    }).then((text) => { console.log(text); this.sendPromptText(text, apiKey, true) });
   }
 
   async receivedMessage(data, apiKey) {
     switch (data.type) {
-      case 'runCommand': {
-        console.log(data.command)
-        await this.runCommand(data.command, apiKey)
-        break
-      }
       case 'runScript': {
-        console.log(data.script.description)
-        await this.runCommand({name:'run_script',args:{script:data.script}}, apiKey)
+        await this.executeScript(data.script, data.uniqueId, apiKey)
         break
       }
       case 'sendPrompt': {
@@ -417,10 +309,10 @@ class ChatSidebarProvider {
       <div class="wrapper ai">
         <div class="chat">
           <div class="profile chat_header">
-            ${botSvg} <span>Let's code</span>
+            ${botSvg} <span>AIIDE</span>
           </div>
           <p>
-              AIIDE
+            Let's code
           </p>
           <button id="btn-settings">Settings</button>
         </div>
