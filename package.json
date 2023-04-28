@@ -280,6 +280,7 @@
 		"@types/node": "16.x",
 		"@types/vscode": "^1.72.0",
 		"@vscode/test-electron": "^2.2.0",
+		"esbuild": "^0.16.17",
 		"eslint": "^8.35.0",
 		"eslint-config-standard": "^17.0.0",
 		"eslint-plugin-import": "^2.27.5",
@@ -290,6 +291,7 @@
 		"typescript": "^4.9.3"
 	},
 	"dependencies": {
+		"@vscode/webview-ui-toolkit": "^1.2.2",
 		"axios": "^0.26.1",
 		"cheerio": "^1.0.0-rc.12",
 		"cohere-ai": "^5.0.2",

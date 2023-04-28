@@ -314,7 +314,6 @@ class ChatSidebarProvider {
           <p>
             Let's code
           </p>
-          <button id="btn-settings">Settings</button>
         </div>
       </div>
     </div>`
@@ -341,7 +340,8 @@ class ChatSidebarProvider {
                 <form id="app" class="">  
                     <input type="hidden" name="lastUniqueId" id="lastUniqueId" value="">
                     <div id="header">
-                      <button title="clear chat" id="btn-clear" >${clearButtonSvg}</button>
+                      <button id="btn-settings">Settings</button>
+                      <button title="clear chat" id="btn-clear" class="codicon codicon-trash"></button>
                     </div>
                     <div id="chat_container" class="hljs">
                         ${chat}

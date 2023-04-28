@@ -21,3 +21,6 @@ This Visual Studio Code extension allows you to apply a diff from your clipboard
 4. Type "Apply Diff" in the Command Palette and press Enter, or use the keybinding `Ctrl+Alt+D` (Windows/Linux) or `Cmd+Alt+D` (Mac) to run the "Apply Diff from Clipboard" command.
 5. The extension will attempt to apply the diff to the currently open file. If the diff is applied successfully, a success message will be shown. If there are any issues or conflicts, an error message will be displayed.
 
+## Notes
+
+Coding, Debugging, Refactoring, Testing, Running, Question
